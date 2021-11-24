@@ -263,7 +263,7 @@ const plotBubbleChart = (data) => {
 };
 
 // load csv data
-d3.csv("../data/slv_health.csv", d3.autoType).then(function (data) {
+d3.csv("./data/slv_health.csv", d3.autoType).then(function (data) {
   console.log(data);
 
   plotBubbleChart(data);
