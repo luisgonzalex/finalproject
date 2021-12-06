@@ -13,6 +13,7 @@ const initialRadius = 0;
 const radiusLimit = 80;
 
 const slideThresh = 3;
+const slideBoundary = 6;
 
 const createNodes = (data) => {
   const maxVal = d3.max(data, (d) => d.exp_6months_health);
@@ -32,7 +33,7 @@ const createNodes = (data) => {
       radius: radiusScale(d.exp_6months_health_USD),
       value: d.exp_6months_health_USD,
       remittances: d.remittances_yn,
-      rural: d.rural_urban,
+      rural: d.rural_urban == 1 ? true : false,
       reducedExp: d.lcsi_reduced_exp,
       govtAid: d.assist_yn,
       hhSize: d.hh_size,
@@ -208,7 +209,7 @@ const plotBubbleChart = (data) => {
 
   const simulation = d3
     .forceSimulation()
-    .velocityDecay(0.25)
+    .velocityDecay(0.17)
     .force(
       "collide",
       d3
@@ -216,7 +217,7 @@ const plotBubbleChart = (data) => {
         .radius(function (d) {
           return d.radius + padding;
         })
-        .strength(0.25)
+        .strength(0.3)
     )
     .on("tick", ticked);
   simulation.nodes(nodes);
@@ -225,16 +226,22 @@ const plotBubbleChart = (data) => {
   simulation.alpha(0.8).restart();
   // simulation.stop();
 
+  const isOOB = (s) => {
+    return !(s >= slideThresh && s <= slideBoundary);
+  };
+
   const handleLoad = (slideNumber) => {
     removeSeparatingText();
-    if (currentSlide === slideNumber) {
+    currentSlide = slideNumber;
+    console.log(slideNumber);
+    console.log(isOOB(slideNumber));
+    if (isOOB(slideNumber)) {
       return;
     }
-    currentSlide = slideNumber;
 
     const moveBubbleChart = (sn) => {
       document
-        .getElementById(`row-${sn - 2}`)
+        .getElementById(`row-${sn - slideThresh + 1}`)
         .appendChild(document.getElementById("bubble-chart"));
     };
     moveBubbleChart(slideNumber);
@@ -257,8 +264,8 @@ const plotBubbleChart = (data) => {
       simulation.force("x", forceXSeparate("remittances")).alpha(0.8).restart();
       addSeparatingText("Remittances", "No Remittances");
     } else if (slideNumber === slideThresh + 2) {
-      simulation.force("x", forceXSeparate("reducedExp")).alpha(0.8).restart();
-      addSeparatingText("Reduced Spending", "No Reduced Spending");
+      simulation.force("x", forceXSeparate("rural")).alpha(0.8).restart();
+      addSeparatingText("Rural", "Urban");
     } else if (slideNumber === slideThresh + 3) {
       simulation.force("x", forceXSeparate("govtAid")).alpha(0.8).restart();
       addSeparatingText("Government Aid", "No Goverment Aid");
@@ -271,9 +278,6 @@ const plotBubbleChart = (data) => {
   // set up a listener for future slide changes
   window.ws.el.addEventListener("ws:slide-change", (e) => {
     const currentSlide = e.detail.currentSlide;
-    if (currentSlide < slideThresh) {
-      return;
-    }
     handleLoad(currentSlide);
   });
 
@@ -331,8 +335,8 @@ const plotBubbleChart = (data) => {
 
 // load csv data
 d3.csv("./data/slv_health.csv", d3.autoType).then(function (data) {
-  const d = data.filter((d) => d.exp_6months_health_USD > 0);
+  // const d = data.filter((d) => d.exp_6months_health_USD > 0);
   console.log(d);
 
-  plotBubbleChart(d.splice(1, 400));
+  plotBubbleChart(d);
 });
