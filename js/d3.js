@@ -335,7 +335,7 @@ const plotBubbleChart = (data) => {
 
 // load csv data
 d3.csv("./data/slv_health.csv", d3.autoType).then(function (data) {
-  // const d = data.filter((d) => d.exp_6months_health_USD > 0);
+  const d = data.filter((d) => d.exp_6months_health_USD > 0);
   console.log(d);
 
   plotBubbleChart(d);
