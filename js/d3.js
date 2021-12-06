@@ -1,6 +1,7 @@
 // CONSTANTS
 const greenSheen = "#88B7B5";
 const purpleRhythm = "#847996";
+const black = "#fffffff";
 const width = 1200;
 const height = 800;
 const heightOffset = 50;
@@ -11,6 +12,8 @@ const forceStrength = 0.025;
 const initialRadius = 0;
 const radiusLimit = 80;
 
+const slideThresh = 3;
+
 const createNodes = (data) => {
   const maxVal = d3.max(data, (d) => d.exp_6months_health);
 
@@ -18,7 +21,7 @@ const createNodes = (data) => {
   var radiusScale = d3
     .scaleLinear()
     // .scalePow()
-    // .exponent(0.7)
+    // .exponent(0.5)
     .range([2, radiusLimit])
     .domain([0, maxVal]);
 
@@ -58,6 +61,10 @@ const plotBubbleChart = (data) => {
     d.id;
   });
 
+  const fillColor = (remittances) => {
+    return remittances ? greenSheen : purpleRhythm;
+  };
+
   // adding tooltip logic
 
   // -1- Create a tooltip div that is hidden by default:
@@ -73,16 +80,17 @@ const plotBubbleChart = (data) => {
 
   // -2- Create 3 functions to show / update (when mouse move but stay on same circle) / hide the tooltip
   var showTooltip = function (d) {
+    const color = currentSlide > slideThresh ? fillColor(d.remittances) : black;
     var formatter = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       maximumFractionDigits: 0,
       minimumFractionDigits: 0,
     });
-    tooltip.transition().duration(200);
+    tooltip.transition().duration(100);
     tooltip
       .style("opacity", 0.9)
-      .style("background-color", d.remittances ? greenSheen : purpleRhythm)
+      .style("background-color", color)
       .html(
         `<span id="tooltip-text">This household of <span id='hh'>${
           d.hhSize
@@ -102,13 +110,44 @@ const plotBubbleChart = (data) => {
       .style("top", d3.mouse(this)[1] + 30 + "px");
   };
   var hideTooltip = function (d) {
-    tooltip.transition().duration(200).style("opacity", 0);
+    tooltip.transition().duration(100).style("opacity", 0);
     const style = document.getElementById(d.id).style;
     style.stroke = "black";
     style.strokeWidth = 0;
   };
 
   // end tooltip logic
+
+  // begin text logic
+
+  const addSeparatingText = (text1, text2) => {
+    svg
+      .append("text")
+      .attr("id", "yes-sep")
+      .attr("x", width / 4)
+      .attr("y", height * 0.02)
+      .text(text1)
+      .style("font-size", "24px")
+      .attr("alignment-baseline", "middle")
+      .attr("text-anchor", "middle");
+
+    svg
+      .append("text")
+      .attr("id", "no-sep")
+      .attr("x", (3 * width) / 4)
+      .attr("y", height * 0.02)
+      .text(text2)
+      .style("font-size", "24px")
+      .attr("alignment-baseline", "middle")
+      .attr("text-anchor", "middle");
+  };
+
+  const removeSeparatingText = () => {
+    svg.selectAll("#yes-sep").remove();
+    svg.selectAll("#no-sep").remove();
+  };
+
+  // end text logic
 
   const threshold = 1;
 
@@ -119,18 +158,22 @@ const plotBubbleChart = (data) => {
     .attr("id", (d) => d.id)
     .attr("r", initialRadius)
     .attr("fill", function (d) {
-      return d.remittances ? greenSheen : purpleRhythm;
+      return black;
     })
-    .style("fill", function (d) {
-      if (d.value <= threshold) return "#fff";
-    })
-    .style("stroke", function (d) {
-      if (d.value <= threshold)
-        return d.remittances ? greenSheen : purpleRhythm;
-    })
-    .style("stroke-width", function (d) {
-      if (d.value <= threshold) return 0.9;
-    })
+    .attr("opacity", 0.9)
+    // .attr("fill", function (d) {
+    //   return d.remittances ? greenSheen : purpleRhythm;
+    // })
+    // .style("fill", function (d) {
+    //   if (d.value <= threshold) return "#fff";
+    // })
+    // .style("stroke", function (d) {
+    //   if (d.value <= threshold)
+    //     return d.remittances ? greenSheen : purpleRhythm;
+    // })
+    // .style("stroke-width", function (d) {
+    //   if (d.value <= threshold) return 0.9;
+    // })
     .on("mouseover", showTooltip)
     .on("mouseleave", hideTooltip);
 
@@ -139,7 +182,7 @@ const plotBubbleChart = (data) => {
   bubbles
     .transition()
     .ease(d3.easeBounce)
-    .duration(0.5)
+    .duration(2000)
     .attr("r", function (d) {
       // console.log(d.radius);
       return d.radius;
@@ -183,6 +226,7 @@ const plotBubbleChart = (data) => {
   // simulation.stop();
 
   const handleLoad = (slideNumber) => {
+    removeSeparatingText();
     if (currentSlide === slideNumber) {
       return;
     }
@@ -190,31 +234,44 @@ const plotBubbleChart = (data) => {
 
     const moveBubbleChart = (sn) => {
       document
-        .getElementById(`row-${sn - 1}`)
+        .getElementById(`row-${sn - 2}`)
         .appendChild(document.getElementById("bubble-chart"));
     };
     moveBubbleChart(slideNumber);
-    if (slideNumber === 2) {
-      removeSeparatingText();
+
+    // change bubble color past second slide
+    bubbles
+      .transition()
+      .duration(2000)
+      .attr("fill", function (d) {
+        // console.log(d.radius);
+
+        return slideNumber > slideThresh ? fillColor(d.remittances) : black;
+      });
+    console.log(slideNumber);
+    if (slideNumber === slideThresh) {
       simulation.force("x", forceXCombine);
       simulation.force("y", forceY);
       simulation.alpha(0.8).restart();
-    } else if (slideNumber === 3) {
+    } else if (slideNumber === slideThresh + 1) {
+      simulation.force("x", forceXSeparate("remittances")).alpha(0.8).restart();
+      addSeparatingText("Remittances", "No Remittances");
+    } else if (slideNumber === slideThresh + 2) {
       simulation.force("x", forceXSeparate("reducedExp")).alpha(0.8).restart();
-      addSeparatingText();
-    } else if (slideNumber === 4) {
+      addSeparatingText("Reduced Spending", "No Reduced Spending");
+    } else if (slideNumber === slideThresh + 3) {
       simulation.force("x", forceXSeparate("govtAid")).alpha(0.8).restart();
-      addSeparatingText();
+      addSeparatingText("Government Aid", "No Goverment Aid");
     }
   };
   // handle the slide on load
-  var currentSlide = window.location.hash.split("=")[1];
+  var currentSlide = parseInt(window.location.hash.split("=")[1]);
   handleLoad(currentSlide);
 
   // set up a listener for future slide changes
   window.ws.el.addEventListener("ws:slide-change", (e) => {
     const currentSlide = e.detail.currentSlide;
-    if (currentSlide === 1) {
+    if (currentSlide < slideThresh) {
       return;
     }
     handleLoad(currentSlide);
@@ -231,31 +288,6 @@ const plotBubbleChart = (data) => {
   //   simulation.force("x", forceXSeparate("govtAid")).alpha(0.8).restart();
   //   addSeparatingText();
   // });
-
-  const addSeparatingText = () => {
-    svg
-      .append("text")
-      .attr("id", "yes-sep")
-      .attr("x", width / 4)
-      .attr("y", height * 0.02)
-      .text("Yes")
-      .style("font-size", "24px")
-      .attr("alignment-baseline", "middle");
-
-    svg
-      .append("text")
-      .attr("id", "no-sep")
-      .attr("x", (3 * width) / 4)
-      .attr("y", height * 0.02)
-      .text("No")
-      .style("font-size", "24px")
-      .attr("alignment-baseline", "middle");
-  };
-
-  const removeSeparatingText = () => {
-    svg.selectAll("#yes-sep").remove();
-    svg.selectAll("#no-sep").remove();
-  };
 
   // // add legend
   // svg
@@ -299,7 +331,8 @@ const plotBubbleChart = (data) => {
 
 // load csv data
 d3.csv("./data/slv_health.csv", d3.autoType).then(function (data) {
-  console.log(data);
+  const d = data.filter((d) => d.exp_6months_health_USD > 0);
+  console.log(d);
 
-  plotBubbleChart(data);
+  plotBubbleChart(d.splice(1, 400));
 });
