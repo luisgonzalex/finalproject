@@ -1,5 +1,5 @@
 body {
-  background-color: #f4ecd6 !important;
+  background-color: black !important;
   margin: 0;
 }
 
@@ -48,4 +48,14 @@ body {
 
 .remove-all-margin {
   margin: 0 !important;
+}
+
+.web-text {
+  font-size: 20px;
+  font-weight: normal;
+}
+
+.remit-text {
+  font-size: 24px;
+  font-weight: bolder;
 }
