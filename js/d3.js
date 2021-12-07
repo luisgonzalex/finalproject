@@ -13,7 +13,13 @@ const initialRadius = 0;
 const radiusLimit = 80;
 
 const slideThresh = 3;
+const slideAll = 3;
+const slideRemittances = 4;
+const slideHealthPriority = 5;
+const slideGovtAid = 6;
 const slideBoundary = 6;
+
+// const slideMapping = [[3, 4]]
 
 const createNodes = (data) => {
   const maxVal = d3.max(data, (d) => d.exp_6months_health);
@@ -183,7 +189,7 @@ const plotBubbleChart = (data) => {
   bubbles
     .transition()
     .ease(d3.easeBounce)
-    .duration(2000)
+    .duration(100)
     .attr("r", function (d) {
       // console.log(d.radius);
       return d.radius;
@@ -249,7 +255,7 @@ const plotBubbleChart = (data) => {
     // change bubble color past second slide
     bubbles
       .transition()
-      .duration(2000)
+      .duration(100)
       .attr("fill", function (d) {
         // console.log(d.radius);
 
