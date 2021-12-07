@@ -223,7 +223,7 @@ const plotBubbleChart = (data) => {
         .radius(function (d) {
           return d.radius + padding;
         })
-        .strength(0.3)
+        .strength(0.5)
     )
     .on("tick", ticked);
   simulation.nodes(nodes);

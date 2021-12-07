@@ -1,14 +1,14 @@
 // CONSTANTS
 const greenSheen = "#88B7B5";
 const purpleRhythm = "#847996";
-const black = "#fffffff";
+const black = "#f4ecd6";
 
-const width = 1200;
+const width = 1000;
 const height = 800;
-const heightOffset = 50;
+const heightOffset = 60;
 const offset = 100;
-const center = { x: width / 2, y: height / 2 - heightOffset };
-const padding = 2.5;
+const center = { x: width / 2, y: height / 2 - 30 };
+const padding = 2.25;
 
 const initialRadius = 0;
 const radiusLimit = 80;
@@ -22,11 +22,15 @@ const slideGovtAid = 6;
 const slideBoundary = 6;
 
 const normalOpacity = 0.9;
-const deFocusOpacity = 0.1;
+const deFocusOpacity = 0.2;
 
 // BEGIN HELPER METHODS
 const isOOB = (s) => {
   return !(s >= slideThresh && s <= slideBoundary);
+};
+
+const fillColor = (condition) => {
+  return condition ? greenSheen : purpleRhythm;
 };
 
 const createNodes = (data) => {
@@ -71,7 +75,7 @@ const plotBubbleChart = (data) => {
   var tooltip = d3
     .select("#bubble-chart")
     .append("div")
-    .style("opacity", 0.6)
+    .style("opacity", 0.75)
     .attr("class", "tooltip")
     .style("background-color", "black")
     .style("border-radius", "5px")
@@ -93,23 +97,31 @@ const plotBubbleChart = (data) => {
       .html(
         `<span id="tooltip-text">This household of <span id='hh'>${
           d.hhSize
-        }</span> spent <h2>${formatter.format(d.value)} USD</h2>
+        }</span> spent <h4>${formatter.format(d.value)} USD</h4>
          on healthcare.</span>`
       )
       .style("left", d3.event.pageX + 30 + "px")
       .style("top", d3.event.pageY + 30 + "px");
+
+    const style = document.getElementById(d.id).style;
+    style.stroke = "black";
+    style.strokeWidth = 2;
   };
   var hideTooltip = function (d) {
     tooltip.style("visibility", "hidden");
-  };
 
-  // end tooltip logic
+    const style = document.getElementById(d.id).style;
+    style.stroke = "black";
+    style.strokeWidth = 0;
+  };
   // END TOOLTIP CODE
 
   const svg = d3
     .select("#bubble-chart")
     .append("svg")
     .attr("id", "svg")
+    .attr("width", width)
+    .attr("height", height)
     .attr("viewBox", [0, 0, width, height]);
 
   const nodes = createNodes(data);
@@ -124,9 +136,7 @@ const plotBubbleChart = (data) => {
     .classed("bubble", true)
     .attr("id", (d) => d.id)
     .attr("r", initialRadius)
-    .attr("fill", function (d) {
-      return greenSheen;
-    })
+    .attr("fill", black)
     .attr("opacity", 0.9)
     .on("mouseover", showTooltip)
     .on("mouseleave", hideTooltip);
@@ -144,14 +154,14 @@ const plotBubbleChart = (data) => {
   const forceXCombine = d3.forceX(center.x).strength(forceStrength);
   const forceXSeparate = (condition) => {
     return d3
-      .forceX((d) => (d[condition] ? width / 4 : (3 * width) / 4))
+      .forceX((d) => (d[condition] ? width / 4 : (3 * width) / 4) + 50)
       .strength(forceStrength);
   };
   const forceY = d3.forceY(center.y).strength(forceStrength);
 
   const simulation = d3
     .forceSimulation()
-    .velocityDecay(0.15)
+    .velocityDecay(0.17)
     .force(
       "collide",
       d3
@@ -159,7 +169,7 @@ const plotBubbleChart = (data) => {
         .radius(function (d) {
           return d.radius + padding;
         })
-        .strength(0.75)
+        .strength(0.25)
     )
     .on("tick", ticked);
   simulation.nodes(nodes);
@@ -188,22 +198,42 @@ const plotBubbleChart = (data) => {
       .getElementById(`row-${slideNumber - slideThresh + 1}`)
       .appendChild(document.getElementById("bubble-chart"));
 
-    bubbles
-      .transition()
-      .duration(3000)
-      .attr("opacity", (d) => {
-        return normalOpacity;
-      });
+    bubbles.transition().duration(100).attr("opacity", normalOpacity);
+    console.log("normal opacity set");
 
     // add the appropriate force
     if (slideNumber === slideAll) {
+      svg.selectAll("#yes-r").remove();
+      svg.selectAll("#no-r").remove();
+      bubbles.transition().duration(3000).attr("fill", black);
       simulation.force("x", forceXCombine);
       simulation.force("y", forceY);
-      simulation.alpha(0.8).restart();
+      simulation.alpha(0.5).restart();
     } else if (slideNumber == slideRemittances) {
+      bubbles
+        .transition()
+        .duration(3000)
+        .attr("fill", (d) => {
+          return fillColor(d.remittances);
+        });
       simulation.force("x", forceXSeparate("remittances"));
       simulation.force("y", forceY);
       simulation.alpha(0.8).restart();
+      svg
+        .append("text")
+        .attr("x", width / 4)
+        .attr("y", heightOffset)
+        .text("Remittances")
+        .attr("class", "remit-text")
+        .attr("id", "yes-r");
+
+      svg
+        .append("text")
+        .attr("x", (3 * width) / 4)
+        .attr("y", heightOffset)
+        .text("No Remittances")
+        .attr("class", "remit-text")
+        .attr("id", "no-r");
     } else if (slideNumber == slideHealthPriority) {
       bubbles
         .transition()
