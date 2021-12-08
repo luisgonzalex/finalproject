@@ -11,7 +11,7 @@ const center = { x: width / 2, y: height / 2 - 30 };
 const padding = 2.25;
 
 const initialRadius = 0;
-const radiusLimit = 80;
+const radiusLimit = 75;
 const forceStrength = 0.025;
 
 const slideThresh = 3;
@@ -39,6 +39,8 @@ const createNodes = (data) => {
   // set up scale for bubbles
   var radiusScale = d3
     .scaleLinear()
+    // .scalePow()
+    // .exponent(0.7)
     .range([2, radiusLimit])
     .domain([0, maxVal]);
 
@@ -116,6 +118,30 @@ const plotBubbleChart = (data) => {
   };
   // END TOOLTIP CODE
 
+  // begin example circle
+  const showExampleBubble = () => {
+    svg
+      .append("circle")
+      .attr("cx", "20%")
+      .attr("cy", "90%")
+      .attr("r", 10)
+      .attr("class", "example-bubble")
+      .style("fill", black);
+    svg
+      .append("text")
+      .attr("x", "22%")
+      .attr("y", "90.5%")
+      .text(
+        "Each bubble represents a household. Larger bubbles represent more health spending."
+      )
+      .style("color", black);
+  };
+
+  const removeExampleBubble = () => {
+    svg.selectAll("#example-bubble").remove();
+  };
+  // end example circle
+
   const svg = d3
     .select("#bubble-chart")
     .append("svg")
@@ -179,6 +205,7 @@ const plotBubbleChart = (data) => {
   const handleSlideChange = (slideNumber) => {
     if (vizStarted && prevSlide === slideNumber) return;
     if (!vizStarted && !isOOB(slideNumber)) {
+      showExampleBubble();
       vizStarted = true;
       bubbles
         .transition()
@@ -190,6 +217,14 @@ const plotBubbleChart = (data) => {
     }
     if (isOOB(slideNumber)) return;
     prevSlide = slideNumber;
+
+    bubbles
+      .transition()
+      .ease(d3.easeBounce)
+      .duration(100)
+      .attr("r", function (d) {
+        return d.radius;
+      });
 
     // if the last viz slide we were on is the same, do nothing
 
@@ -205,17 +240,22 @@ const plotBubbleChart = (data) => {
     if (slideNumber === slideAll) {
       svg.selectAll("#yes-r").remove();
       svg.selectAll("#no-r").remove();
-      bubbles.transition().duration(3000).attr("fill", black);
+      bubbles
+        .transition()
+        .duration(3000)
+        .attr("fill", black)
+        .attr("opacity", normalOpacity);
       simulation.force("x", forceXCombine);
       simulation.force("y", forceY);
       simulation.alpha(0.5).restart();
-    } else if (slideNumber == slideRemittances) {
+    } else if (slideNumber === slideRemittances) {
       bubbles
         .transition()
         .duration(3000)
         .attr("fill", (d) => {
           return fillColor(d.remittances);
-        });
+        })
+        .attr("opacity", normalOpacity);
       simulation.force("x", forceXSeparate("remittances"));
       simulation.force("y", forceY);
       simulation.alpha(0.8).restart();
@@ -234,20 +274,30 @@ const plotBubbleChart = (data) => {
         .text("No Remittances")
         .attr("class", "remit-text")
         .attr("id", "no-r");
-    } else if (slideNumber == slideHealthPriority) {
+    } else if (slideNumber === slideHealthPriority) {
       bubbles
         .transition()
         .duration(3000)
+        .attr("fill", (d) => {
+          return fillColor(d.remittances);
+        })
         .attr("opacity", (d) => {
           return d.healthPriority ? normalOpacity : deFocusOpacity;
         });
-    } else if (slideNumber == slideGovtAid) {
+      simulation.force("x", forceXSeparate("remittances"));
+      simulation.force("y", forceY);
+    } else if (slideNumber === slideGovtAid) {
       bubbles
         .transition()
         .duration(3000)
+        .attr("fill", (d) => {
+          return fillColor(d.remittances);
+        })
         .attr("opacity", (d) => {
           return d.aid ? normalOpacity : deFocusOpacity;
         });
+      simulation.force("x", forceXSeparate("remittances"));
+      simulation.force("y", forceY);
     }
   };
 
