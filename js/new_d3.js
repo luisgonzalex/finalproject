@@ -77,7 +77,7 @@ const plotBubbleChart = (data) => {
   var tooltip = d3
     .select("#bubble-chart")
     .append("div")
-    .style("opacity", 0.75)
+    .style("opacity", normalOpacity)
     .attr("class", "tooltip")
     .style("background-color", "black")
     .style("border-radius", "5px")
