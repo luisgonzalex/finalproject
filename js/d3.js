@@ -268,13 +268,13 @@ const plotBubbleChart = (data) => {
       simulation.alpha(0.8).restart();
     } else if (slideNumber === slideThresh + 1) {
       simulation.force("x", forceXSeparate("remittances")).alpha(0.8).restart();
-      addSeparatingText("Remittances", "No Remittances");
+      addSeparatingText("Households Receiving Remittances", "Households Not Receiving Remittances");
     } else if (slideNumber === slideThresh + 2) {
       simulation.force("x", forceXSeparate("rural")).alpha(0.8).restart();
-      addSeparatingText("Rural", "Urban");
+      addSeparatingText("Rural Households", "Urban Hoouseholds");
     } else if (slideNumber === slideThresh + 3) {
       simulation.force("x", forceXSeparate("govtAid")).alpha(0.8).restart();
-      addSeparatingText("Government Aid", "No Goverment Aid");
+      addSeparatingText("Households RReceiving Government Aid", "Households Not Receiving Goverment Aid");
     }
   };
   // handle the slide on load
