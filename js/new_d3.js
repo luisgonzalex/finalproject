@@ -106,14 +106,14 @@ const plotBubbleChart = (data) => {
       .style("top", d3.event.pageY + 30 + "px");
 
     const style = document.getElementById(d.id).style;
-    style.stroke = "black";
+    style.stroke = "white";
     style.strokeWidth = 2;
   };
   var hideTooltip = function (d) {
     tooltip.style("visibility", "hidden");
 
     const style = document.getElementById(d.id).style;
-    style.stroke = "black";
+    style.stroke = "white";
     style.strokeWidth = 0;
   };
   // END TOOLTIP CODE
